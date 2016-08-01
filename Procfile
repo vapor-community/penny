@@ -1,0 +1,1 @@
+worker: SlackBot --env=production
