@@ -26,29 +26,6 @@ let mysql = try MySQL.Database(
     database: databaseName
 )
 
-// reset db
-// try mysql.execute("delete from coins")
-
-extension MySQL.Database {
-    func addCoins(for user: String) throws -> Int {
-        let command = "INSERT INTO coins (user, coins) VALUES('\(user)', 1) ON DUPLICATE KEY UPDATE coins = coins + 1;"
-        try mysql.execute(command)
-        return try coinsCount(for: user)
-    }
-
-    func coinsCount(for user: String) throws -> Int {
-        return try mysql.execute("SELECT coins FROM coins WHERE user = '\(user)';")
-            .first?["coins"]?
-            .int
-            ?? 0
-    }
-
-    func top(limit: Int) throws -> [[String: Node]] {
-        let limit = max(limit, 25)
-        return try mysql.execute("SELECT * FROM coins ORDER BY coins DESC LIMIT \(limit)")
-    }
-}
-
 // WebSocket Init
 let rtmResponse = try Client.loadRealtimeApi(token: token)
 guard let webSocketURL = rtmResponse.data["url"].string else { throw BotError.invalidResponse }
@@ -58,7 +35,6 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
 
     ws.onText = { ws, text in
         let event = try JSON(bytes: text.utf8.array)
-        print("Event: \(event)")
 
         guard
             let channel = event["channel"]?.string,
@@ -85,8 +61,23 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
             } else if trimmed.lowercased().contains("top") {
                 guard let limit = trimmed.components(separatedBy: " ").last.flatMap({ Int($0) }) else { return }
                 let top = try mysql.top(limit: limit).map { "- <@\($0["user"]?.string ?? "?")>: \($0["coins"]?.int ?? 0)" } .joined(separator: "\n")
-                print("TOP: \(top)")
                 let response = SlackMessage(to: channel, text: "Top \(limit): \n\(top)")
+                try ws.send(response)
+            } else if trimmed.lowercased().contains("how many coins") {
+                let user = trimmed.components(separatedBy: " ")
+                    .lazy
+                    .filter({
+                        $0.hasPrefix("<@")
+                        && $0.hasSuffix(">")
+                        && $0 != "<@U1PF52H9C>"
+                    })
+                    .map({ $0.characters.dropFirst(2).dropLast() })
+                    .first
+                    .flatMap({ String($0) })
+                    ?? fromId
+
+                let count = try mysql.coinsCount(for: user)
+                let response = SlackMessage(to: channel, text: "<@\(user)> has \(count) :coin:")
                 try ws.send(response)
             }
         }
