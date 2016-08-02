@@ -26,7 +26,8 @@ let mysql = try MySQL.Database(
     database: databaseName
 )
 
-extension String: Swift.Error {}
+// reset db
+// try mysql.execute("delete from coins")
 
 extension MySQL.Database {
     func addCoins(for user: String) throws -> Int {
@@ -40,6 +41,11 @@ extension MySQL.Database {
             .first?["coins"]?
             .int
             ?? 0
+    }
+
+    func top(limit: Int) throws -> [[String: Node]] {
+        let limit = max(limit, 25)
+        return try mysql.execute("SELECT * FROM coins ORDER BY coins DESC LIMIT \(limit)")
     }
 }
 
@@ -75,6 +81,12 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
                 try ws.send(response)
             } else if trimmed.lowercased().contains("environment") {
                 let response = SlackMessage(to: channel, text: "Current environment is \(config.environment)")
+                try ws.send(response)
+            } else if trimmed.lowercased().contains("top") {
+                guard let limit = trimmed.components(separatedBy: " ").last.flatMap({ Int($0) }) else { return }
+                let top = try mysql.top(limit: limit).map { "- <@\($0["user"]?.string ?? "?")>: \($0["coins"]?.int ?? 0)" } .joined(separator: "\n")
+                print("TOP: \(top)")
+                let response = SlackMessage(to: channel, text: "Top \(limit): \n\(top)")
                 try ws.send(response)
             }
         }
