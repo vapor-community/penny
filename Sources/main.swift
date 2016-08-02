@@ -1,8 +1,9 @@
 import HTTP
 import Vapor
 import VaporTLS
-import MongoKitten
 import Foundation
+
+import MySQL
 
 let VERSION = "0.1.0"
 
@@ -10,14 +11,37 @@ let config = try Config(workingDirectory: workingDirectory)
 
 // Config variables
 guard let token = config["bot-config", "token"].string else { throw BotError.missingConfig }
-guard let user = config["mlab", "user"].string, let pass = config["mlab", "pass"].string else { throw BotError.missingMlabCredentials }
-guard let uri = config["mlab", "uri"].string else { throw BotError.missingMlabDatabaseUrl }
-guard let databaseName = config["mlab", "database"].string else { throw BotError.missingMlabDatabaseName }
+guard let user = config["mysql", "user"].string, let pass = config["mysql", "pass"].string else { throw BotError.missingMlabCredentials }
 
-// Database Init
-let server = try Server("mongodb://\(user):\(pass)@\(uri)", automatically: true)
-let database = server[databaseName]
-let coinCountCollection = CoinCountCollection(database)
+guard
+    let host = config["mysql", "host"].string,
+    let port = config["mysql", "port"].string
+    else { throw BotError.missingMlabDatabaseUrl }
+guard let databaseName = config["mysql", "database"].string else { throw BotError.missingMlabDatabaseName }
+
+let mysql = try MySQL.Database(
+    host: host,
+    user: user,
+    password: pass,
+    database: databaseName
+)
+
+extension String: Swift.Error {}
+
+extension MySQL.Database {
+    func addCoins(for user: String) throws -> Int {
+        let command = "INSERT INTO coins (user, coins) VALUES('\(user)', 1) ON DUPLICATE KEY UPDATE coins = coins + 1;"
+        try mysql.execute(command)
+        return try coinsCount(for: user)
+    }
+
+    func coinsCount(for user: String) throws -> Int {
+        return try mysql.execute("SELECT coins FROM coins WHERE user = '\(user)';")
+            .first?["coins"]?
+            .int
+            ?? 0
+    }
+}
 
 // WebSocket Init
 let rtmResponse = try Client.loadRealtimeApi(token: token)
@@ -39,7 +63,7 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
         let trimmed = message.trimmedWhitespace()
         if trimmed.hasPrefix("<@") && trimmed.hasCoinSuffix { // leads w/ user
             guard let toId = trimmed.components(separatedBy: "<@").last?.components(separatedBy: ">").first, toId != fromId else { return }
-            let total = try coinCountCollection.addCoin(to: toId)
+            let total = try mysql.addCoins(for: toId)
             let response = SlackMessage(to: channel, text: "<@\(toId)> has \(total) :coin:")
             try ws.send(response)
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {

@@ -1,0 +1,7 @@
+{
+  "user": "$MYSQL_USER",
+  "pass": "$MYSQL_PASS",
+  "host": "$MYSQL_HOST",
+  "port": "$MYSQL_PORT",
+  "database": "$MYSQL_DB"
+}

@@ -1,6 +1,0 @@
-{
-  "user": "$MONGO_USER",
-  "pass": "$MONGO_PASS",
-  "uri": "$MONGO_URI",
-  "database": "$MONGO_DB"
-}
