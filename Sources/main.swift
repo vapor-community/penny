@@ -59,7 +59,10 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
                 let response = SlackMessage(to: channel, text: "Current environment is \(config.environment)")
                 try ws.send(response)
             } else if trimmed.lowercased().contains("top") {
-                guard let limit = trimmed.components(separatedBy: " ").last.flatMap({ Int($0) }) else { return }
+                let limit = trimmed.components(separatedBy: " ")
+                    .last
+                    .flatMap { Int($0) }
+                    ?? 10
                 let top = try mysql.top(limit: limit).map { "- <@\($0["user"]?.string ?? "?")>: \($0["coins"]?.int ?? 0)" } .joined(separator: "\n")
                 let response = SlackMessage(to: channel, text: "Top \(limit): \n\(top)")
                 try ws.send(response)

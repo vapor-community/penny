@@ -29,7 +29,7 @@ extension MySQL.Database {
     }
 
     func top(limit: Int) throws -> [[String: Node]] {
-        let limit = max(limit, 25)
-        return try execute("SELECT * FROM coins ORDER BY coins DESC LIMIT \(limit);")
+        let limit = min(limit, 25)
+        return try execute("SELECT * FROM coins ORDER BY coins DESC LIMIT ?;", [limit])
     }
 }
