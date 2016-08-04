@@ -10,10 +10,6 @@
 
 import MySQL
 
-enum MySQLError: Swift.Error {
-    case unsanitaryUser
-}
-
 extension MySQL.Database {
     func addCoins(for user: String) throws -> Int {
         let command = "INSERT INTO coins (user, coins) VALUES(?, 1) ON DUPLICATE KEY UPDATE coins = coins + 1;"
