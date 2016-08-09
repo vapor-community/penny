@@ -6,18 +6,20 @@ import Foundation
 import MySQL
 
 let VERSION = "0.1.0"
+let PENNY = "U1PF52H9C"
+let GENERAL = "C0N67MJ83"
 
 let config = try Config(workingDirectory: workingDirectory)
 
 // Config variables
 guard let token = config["bot-config", "token"].string else { throw BotError.missingConfig }
-guard let user = config["mysql", "user"].string, let pass = config["mysql", "pass"].string else { throw BotError.missingMlabCredentials }
+guard let user = config["mysql", "user"].string, let pass = config["mysql", "pass"].string else { throw BotError.missingMySQLCredentials }
 
 guard
     let host = config["mysql", "host"].string,
     let port = config["mysql", "port"].string
-    else { throw BotError.missingMlabDatabaseUrl }
-guard let databaseName = config["mysql", "database"].string else { throw BotError.missingMlabDatabaseName }
+    else { throw BotError.missingMySQLDatabaseUrl }
+guard let databaseName = config["mysql", "database"].string else { throw BotError.missingMySQLDatabaseName }
 
 let mysql = try MySQL.Database(
     host: host,
@@ -28,6 +30,7 @@ let mysql = try MySQL.Database(
 
 // WebSocket Init
 let rtmResponse = try Client.loadRealtimeApi(token: token)
+guard let validChannels = rtmResponse.data["channels", "id"].array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 guard let webSocketURL = rtmResponse.data["url"].string else { throw BotError.invalidResponse }
 
 try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { ws in
@@ -35,19 +38,31 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
 
     ws.onText = { ws, text in
         let event = try JSON(bytes: text.utf8.array)
-
+        let last3Seconds = NSDate().timeIntervalSince1970 - 3
         guard
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
-            let fromId = event["user"]?.string
+            let fromId = event["user"]?.string,
+            let ts = event["ts"].flatMap({ $0.string.flatMap({ Double($0) }) }),
+            ts >= last3Seconds
             else { return }
 
         let trimmed = message.trimmedWhitespace()
         if trimmed.hasPrefix("<@") && trimmed.hasCoinSuffix { // leads w/ user
-            guard let toId = trimmed.components(separatedBy: "<@").last?.components(separatedBy: ">").first, toId != fromId else { return }
-            let total = try mysql.addCoins(for: toId)
-            let response = SlackMessage(to: channel, text: "<@\(toId)> has \(total) :coin:")
-            try ws.send(response)
+            guard
+                let toId = trimmed.components(separatedBy: "<@").last?.components(separatedBy: ">").first,
+                toId != fromId,
+                fromId != PENNY
+                else { return }
+
+            if validChannels.contains(channel) {
+                let total = try mysql.addCoins(for: toId)
+                let response = SlackMessage(to: channel, text: "<@\(toId)> has \(total) :coin:")
+                try ws.send(response)
+            } else {
+                let response = SlackMessage(to: channel, text: "Sorry, I only work in public channels. Try thanking <@\(toId)> in <#\(GENERAL)>")
+                try ws.send(response)
+            }
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
                 let response = SlackMessage(to: channel, text: "Hey <@\(fromId)> 👋")
