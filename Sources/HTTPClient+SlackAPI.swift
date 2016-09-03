@@ -11,11 +11,20 @@ extension HTTP.Client {
             "simple_latest": simpleLatest.queryInt,
             "no_unreads": noUnreads.queryInt
         ]
+        let config = try TLS.Config(
+            mode: .client,
+            certificates: .mozilla,
+            verifyCertificates: false
+        )
+        let client = try self.init(scheme: "https", host: "slack.com", port: 443, securityLayer: .tls(config))
+        return try client.get(path: "/api/rtm.start", headers: headers, query: query)
+        /*
         return try get(
             "https://slack.com/api/rtm.start",
             headers: headers,
             query: query
         )
+         */
     }
 }
 
