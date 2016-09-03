@@ -1,23 +1,28 @@
 import HTTP
 import Vapor
-import VaporTLS
 import Foundation
-
 import MySQL
 
-let VERSION = "0.1.0"
+let VERSION = "0.2.0"
 
-let config = try Config(workingDirectory: workingDirectory)
+let configDirectory = workingDirectory + "Config/"
+let config = try Config(
+    prioritized: [
+        .commandLine,
+        .directory(root: configDirectory + "secrets"),
+        .directory(root: configDirectory + "production")
+    ]
+)
 
 // Config variables
-guard let token = config["bot-config", "token"].string else { throw BotError.missingConfig }
-guard let user = config["mysql", "user"].string, let pass = config["mysql", "pass"].string else { throw BotError.missingMlabCredentials }
+guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
+guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMlabCredentials }
 
 guard
-    let host = config["mysql", "host"].string,
-    let port = config["mysql", "port"].string
+    let host = config["mysql", "host"]?.string,
+    let port = config["mysql", "port"]?.string
     else { throw BotError.missingMlabDatabaseUrl }
-guard let databaseName = config["mysql", "database"].string else { throw BotError.missingMlabDatabaseName }
+guard let databaseName = config["mysql", "database"]?.string else { throw BotError.missingMlabDatabaseName }
 
 let mysql = try MySQL.Database(
     host: host,
@@ -27,10 +32,10 @@ let mysql = try MySQL.Database(
 )
 
 // WebSocket Init
-let rtmResponse = try Client.loadRealtimeApi(token: token)
-guard let webSocketURL = rtmResponse.data["url"].string else { throw BotError.invalidResponse }
+let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
+guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
-try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { ws in
+try WebSocket.connect(to: webSocketURL) { ws in
     print("Connected to \(webSocketURL)")
 
     ws.onText = { ws, text in
@@ -39,7 +44,8 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
         guard
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
-            let fromId = event["user"]?.string
+            let fromId = event["user"]?.string,
+            message.contains("<@U1PF52H9C>")
             else { return }
 
         let trimmed = message.trimmedWhitespace()
@@ -56,7 +62,8 @@ try WebSocket.connect(to: webSocketURL, using: Client<TLSClientStream>.self) { w
                 let response = SlackMessage(to: channel, text: "Current version is \(VERSION)")
                 try ws.send(response)
             } else if trimmed.lowercased().contains("environment") {
-                let response = SlackMessage(to: channel, text: "Current environment is \(config.environment)")
+                let env = config["app", "env"]?.string ?? "debug"
+                let response = SlackMessage(to: channel, text: "Current environment is \(env)")
                 try ws.send(response)
             } else if trimmed.lowercased().contains("top") {
                 let limit = trimmed.components(separatedBy: " ")

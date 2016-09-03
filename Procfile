@@ -1,1 +1,1 @@
-worker: SlackBot --env=production
+worker: SlackBot --config:app.env=heroku
