@@ -28,4 +28,9 @@ extension MySQL.Database {
         let limit = min(limit, 25)
         return try execute("SELECT * FROM coins ORDER BY coins DESC LIMIT ?;", [limit])
     }
+
+    func set(coins: Int, for user: String) throws {
+        let command = "INSERT INTO coins (user, coins) VALUES(?, ?) ON DUPLICATE KEY UPDATE coins = ?;"
+        try execute(command, [user, coins, coins])
+    }
 }
