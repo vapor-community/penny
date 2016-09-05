@@ -52,15 +52,15 @@ let mysql = try MySQL.Database(
 print("Line: \(#line)")
 
 // WebSocket Init
-let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
+//let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
 
 print("Line: \(#line)")
 
-guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
+//guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
 print("Line: \(#line)")
 
-guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
+//guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
 print("Line: \(#line)")
 
