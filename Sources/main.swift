@@ -52,8 +52,8 @@ let mysql = try MySQL.Database(
 print("Line: \(#line)")
 
 // WebSocket Init
-//let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
-
+let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
+print("RESP: \(rtmResponse)")
 print("Line: \(#line)")
 
 //guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
