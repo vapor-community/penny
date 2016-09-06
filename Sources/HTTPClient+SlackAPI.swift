@@ -3,6 +3,12 @@ import HTTP
 import TLS
 import Transport
 
+func setupClient() {
+    defaultClientConfig = {
+        return try TLS.Config(context: try Context(mode: .client), certificates: .none, verifyHost: false, verifyCertificates: false, cipher: .compat)
+    }
+}
+
 extension HTTP.Client {
     static func loadRealtimeApi(token: String, simpleLatest: Bool = true, noUnreads: Bool = true) throws -> HTTP.Response {
         let headers: [HeaderKey: String] = ["Accept": "application/json; charset=utf-8"]
@@ -12,10 +18,10 @@ extension HTTP.Client {
             "no_unreads": noUnreads.queryInt
         ]
 
-        let config = try TLS.Config(context: try Context(mode: .client), certificates: .none, verifyHost: false, verifyCertificates: false, cipher: .compat)
-        let client = try BasicClient(scheme: "https", host: "slack.com", port: 443, securityLayer: .tls(config))
-        return try client.get(
-            path: "/api/rtm.start",
+        //let config = try TLS.Config(context: try Context(mode: .client), certificates: .none, verifyHost: false, verifyCertificates: false, cipher: .compat)
+        //let client = try BasicClient(scheme: "https", host: "slack.com", port: 443, securityLayer: .tls(config))
+        return try get(
+            "https://slack.com/api/rtm.start",
             headers: headers,
             query: query
         )

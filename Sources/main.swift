@@ -3,6 +3,8 @@ import Vapor
 import Foundation
 import MySQL
 
+setupClient()
+
 print("Line: \(#line)")
 
 let VERSION = "0.2.0"
@@ -56,15 +58,14 @@ let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
 print("RESP: \(rtmResponse)")
 print("Line: \(#line)")
 
-//guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
+guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
 print("Line: \(#line)")
 
-//guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
+guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
 print("Line: \(#line)")
 
-/*
 try WebSocket.connect(to: webSocketURL) { ws in
     print("Connected to \(webSocketURL)")
 
@@ -138,4 +139,3 @@ try WebSocket.connect(to: webSocketURL) { ws in
         print("\n[CLOSED]\n")
     }
 }
-*/
