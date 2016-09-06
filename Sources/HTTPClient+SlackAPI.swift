@@ -15,7 +15,7 @@ extension HTTP.Client {
         let config = try TLS.Config(context: try Context(mode: .client), certificates: .none, verifyHost: false, verifyCertificates: false, cipher: .compat)
         let client = try BasicClient(scheme: "https", host: "slack.com", port: 443, securityLayer: .tls(config))
         return try client.get(
-            path: "https://slack.com/api/rtm.start",
+            path: "/api/rtm.start",
             headers: headers,
             query: query
         )
