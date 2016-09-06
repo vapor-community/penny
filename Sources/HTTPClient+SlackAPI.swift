@@ -4,11 +4,9 @@ import TLS
 import Transport
 
 func setupClient() {
-    /*
     defaultClientConfig = {
         return try TLS.Config(context: try Context(mode: .client), certificates: .none, verifyHost: false, verifyCertificates: false, cipher: .compat)
     }
-     */
 }
 
 extension HTTP.Client {
