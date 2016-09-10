@@ -5,13 +5,9 @@ import MySQL
 
 setupClient()
 
-print("Line: \(#line)")
-
 let VERSION = "0.2.0"
 let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
-
-print("Line: \(#line)")
 
 let configDirectory = workingDirectory + "Config/"
 let config = try Config(
@@ -22,27 +18,17 @@ let config = try Config(
     ]
 )
 
-print("Line: \(#line)")
-
 // Config variables
 guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
 
-print("Line: \(#line)")
-
 guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
-
-print("Line: \(#line)")
 
 guard
     let host = config["mysql", "host"]?.string,
     let port = config["mysql", "port"]?.string
     else { throw BotError.missingMySQLDatabaseUrl }
 
-print("Line: \(#line)")
-
 guard let databaseName = config["mysql", "database"]?.string else { throw BotError.missingMySQLDatabaseName }
-
-print("Line: \(#line)")
 
 let mysql = try MySQL.Database(
     host: host,
@@ -51,23 +37,15 @@ let mysql = try MySQL.Database(
     database: databaseName
 )
 
-print("Line: \(#line)")
-
 // WebSocket Init
 let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
-print("RESP: \(rtmResponse)")
-print("Line: \(#line)")
 
 guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
-print("Line: \(#line)")
-
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
-print("Line: \(#line)")
-
 try WebSocket.connect(to: webSocketURL) { ws in
-    print("Connected to \(webSocketURL)")
+    print("Connected ...")
 
     ws.onText = { ws, text in
         let event = try JSON(bytes: text.utf8.array)
