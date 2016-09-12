@@ -2,6 +2,9 @@ import HTTP
 import Vapor
 import Foundation
 import MySQL
+import TLS
+
+print("MozillaCert: \n\n=========\n\(TLS.Certificates.mozilla)\n=========\n\n")
 
 setupClient()
 
@@ -10,7 +13,7 @@ let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
 let configDirectory = workingDirectory + "Config/"
-let config = try Config(
+let config = try Settings.Config(
     prioritized: [
         .commandLine,
         .directory(root: configDirectory + "secrets"),
