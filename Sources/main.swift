@@ -4,8 +4,6 @@ import Foundation
 import MySQL
 import TLS
 
-print("MozillaCert: \n\n=========\n\(TLS.Certificates.mozilla)\n=========\n\n")
-
 setupClient()
 
 let VERSION = "0.2.0"

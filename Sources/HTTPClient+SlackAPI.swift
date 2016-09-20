@@ -18,8 +18,6 @@ extension HTTP.Client {
             "no_unreads": noUnreads.queryInt
         ]
 
-        //let config = try TLS.Config(context: try Context(mode: .client), certificates: .none, verifyHost: false, verifyCertificates: false, cipher: .compat)
-        //let client = try BasicClient(scheme: "https", host: "slack.com", port: 443, securityLayer: .tls(config))
         return try get(
             "https://slack.com/api/rtm.start",
             headers: headers,
