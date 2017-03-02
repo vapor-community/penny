@@ -4,22 +4,29 @@ struct SlackMessage {
     let id: UInt32
     let channel: String
     let text: String
+    let threadTs: String?
 
-    init(to channel: String, text: String) {
+    init(to channel: String, text: String, threadTs: String?) {
         self.id = UInt32.random()
         self.channel = channel
         self.text = text
+        self.threadTs = threadTs
     }
 }
 
 extension SlackMessage: NodeRepresentable {
     func makeNode(context: Context) throws -> Node {
-        return try Node(node: [
-                "id": id,
-                "channel": channel,
-                "type": "message",
-                "text": text
-            ]
-        )
+        var node: [String: NodeConvertible] = [
+            "id": id,
+            "channel": channel,
+            "type": "message",
+            "text": text
+        ]
+        
+        if let threadTs = threadTs {
+            node["thread_ts"] = threadTs
+        }
+        
+        return try Node(node: node)
     }
 }

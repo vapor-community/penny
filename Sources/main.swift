@@ -59,6 +59,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
             ts >= last3Seconds
             else { return }
 
+        let threadTs = event["thread_ts"]?.string
         let trimmed = message.trimmedWhitespace()
         if trimmed.hasPrefix("<@") && trimmed.hasCoinSuffix { // leads w/ user
             guard
@@ -69,22 +70,32 @@ try WebSocket.connect(to: webSocketURL) { ws in
 
             if validChannels.contains(channel) {
                 let total = try mysql.addCoins(for: toId)
-                let response = SlackMessage(to: channel, text: "<@\(toId)> has \(total) :coin:")
+                let response = SlackMessage(to: channel,
+                                            text: "<@\(toId)> has \(total) :coin:",
+                                            threadTs: threadTs)
                 try ws.send(response)
             } else {
-                let response = SlackMessage(to: channel, text: "Sorry, I only work in public channels. Try thanking <@\(toId)> in <#\(GENERAL)>")
+                let response = SlackMessage(to: channel,
+                                            text: "Sorry, I only work in public channels. Try thanking <@\(toId)> in <#\(GENERAL)>",
+                                            threadTs: threadTs)
                 try ws.send(response)
             }
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
-                let response = SlackMessage(to: channel, text: "Hey <@\(fromId)> 👋")
+                let response = SlackMessage(to: channel,
+                                            text: "Hey <@\(fromId)> 👋",
+                                            threadTs: threadTs)
                 try ws.send(response)
             } else if trimmed.lowercased().contains("version") {
-                let response = SlackMessage(to: channel, text: "Current version is \(VERSION)")
+                let response = SlackMessage(to: channel,
+                                            text: "Current version is \(VERSION)",
+                                            threadTs: threadTs)
                 try ws.send(response)
             } else if trimmed.lowercased().contains("environment") {
                 let env = config["app", "env"]?.string ?? "debug"
-                let response = SlackMessage(to: channel, text: "Current environment is \(env)")
+                let response = SlackMessage(to: channel,
+                                            text: "Current environment is \(env)",
+                                            threadTs: threadTs)
                 try ws.send(response)
             } else if trimmed.lowercased().contains("top") {
                 let limit = trimmed.components(separatedBy: " ")
@@ -92,7 +103,9 @@ try WebSocket.connect(to: webSocketURL) { ws in
                     .flatMap { Int($0) }
                     ?? 10
                 let top = try mysql.top(limit: limit).map { "- <@\($0["user"]?.string ?? "?")>: \($0["coins"]?.int ?? 0)" } .joined(separator: "\n")
-                let response = SlackMessage(to: channel, text: "Top \(limit): \n\(top)")
+                let response = SlackMessage(to: channel,
+                                            text: "Top \(limit): \n\(top)",
+                                            threadTs: threadTs)
                 try ws.send(response)
             } else if trimmed.lowercased().contains("how many coins") {
                 let user = trimmed.components(separatedBy: " ")
@@ -108,7 +121,9 @@ try WebSocket.connect(to: webSocketURL) { ws in
                     ?? fromId
 
                 let count = try mysql.coinsCount(for: user)
-                let response = SlackMessage(to: channel, text: "<@\(user)> has \(count) :coin:")
+                let response = SlackMessage(to: channel,
+                                            text: "<@\(user)> has \(count) :coin:",
+                                            threadTs: threadTs)
                 try ws.send(response)
             }
         }
