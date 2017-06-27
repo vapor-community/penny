@@ -6,7 +6,7 @@ import TLS
 
 setupClient()
 
-let VERSION = "0.2.0"
+let VERSION = "0.3.0"
 let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
@@ -45,12 +45,49 @@ guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $
 
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
+func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?, printError: Bool = true) throws {
+    if validChannels.contains(channel) {
+        let total = try mysql.addCoins(for: user)
+        let response = SlackMessage(
+            to: channel,
+            text: "<@\(user)> has \(total) :coin:",
+            threadTs: threadTs
+        )
+        try ws.send(response)
+    } else if printError {
+        let response = SlackMessage(
+            to: channel,
+            text: "Sorry, I only work in public channels. Try thanking <@\(user)> in <#\(GENERAL)>",
+            threadTs: threadTs
+        )
+        try ws.send(response)
+    }
+}
+
 try WebSocket.connect(to: webSocketURL) { ws in
     print("Connected ...")
 
     ws.onText = { ws, text in
         let event = try JSON(bytes: text.utf8.array)
         let last3Seconds = NSDate().timeIntervalSince1970 - 3
+        
+        let threadTs = event["thread_ts"]?.string
+        
+        // reactions
+        if
+            event["type"]?.string == "reaction_added",
+            let reaction = event["reaction"]?.string,
+            reaction == "coin" || reaction == "8bit-coin",
+            let item = event["item"],
+            let timestamp = item["ts"]?.string,
+            let channel = item["channel"]?.string,
+            let fromUser = event["user"]?.string,
+            let user = event["item_user"]?.string,
+            fromUser != user
+        {
+            try credit(ws, user, channel: channel, threadTs: threadTs, printError: false)
+        }
+        
         guard
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
@@ -59,7 +96,6 @@ try WebSocket.connect(to: webSocketURL) { ws in
             ts >= last3Seconds
             else { return }
 
-        let threadTs = event["thread_ts"]?.string
         let trimmed = message.trimmedWhitespace()
         if trimmed.hasPrefix("<@") && trimmed.hasCoinSuffix { // leads w/ user
             guard
@@ -68,18 +104,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
                 fromId != PENNY
                 else { return }
 
-            if validChannels.contains(channel) {
-                let total = try mysql.addCoins(for: toId)
-                let response = SlackMessage(to: channel,
-                                            text: "<@\(toId)> has \(total) :coin:",
-                                            threadTs: threadTs)
-                try ws.send(response)
-            } else {
-                let response = SlackMessage(to: channel,
-                                            text: "Sorry, I only work in public channels. Try thanking <@\(toId)> in <#\(GENERAL)>",
-                                            threadTs: threadTs)
-                try ws.send(response)
-            }
+            try credit(ws, toId, channel: channel, threadTs: threadTs)
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
                 let response = SlackMessage(to: channel,
