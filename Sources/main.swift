@@ -4,14 +4,13 @@ import Foundation
 import MySQL
 import TLS
 
-setupClient()
-
-let VERSION = "0.2.0"
+let VERSION = "0.3.0"
 let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
 let configDirectory = workingDirectory + "Config/"
-let config = try Settings.Config(
+
+let config = try Config(
     prioritized: [
         .commandLine,
         .directory(root: configDirectory + "secrets"),
@@ -32,34 +31,63 @@ guard
 guard let databaseName = config["mysql", "database"]?.string else { throw BotError.missingMySQLDatabaseName }
 
 let mysql = try MySQL.Database(
-    host: host,
+    hostname: host,
     user: user,
     password: pass,
     database: databaseName
-)
+).makeConnection()
 
 // WebSocket Init
-let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
+let rtmResponse = try loadRealtimeApi(token: token)
 
 guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
-try WebSocket.connect(to: webSocketURL) { ws in
+func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?, printError: Bool = true) throws {
+    if true {
+        let total = try mysql.addCoins(for: user)
+        let response = SlackMessage(
+            to: channel,
+            text: "<@\(user)> has \(total) :coin:",
+            threadTs: threadTs
+        )
+        try ws.send(response)
+    }
+}
+
+try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
     print("Connected ...")
 
     ws.onText = { ws, text in
         let event = try JSON(bytes: text.utf8.array)
         let last3Seconds = NSDate().timeIntervalSince1970 - 3
+        
+        let threadTs = event["thread_ts"]?.string
+
+        // reactions
+        if
+            event["type"]?.string == "reaction_added",
+            let reaction = event["reaction"]?.string,
+            reaction == "coin" || reaction == "8bit-coin",
+            let item = event["item"],
+            let timestamp = item["ts"]?.string,
+            let channel = item["channel"]?.string,
+            let fromUser = event["user"]?.string,
+            let user = event["item_user"]?.string,
+            fromUser != user
+        {
+            try credit(ws, user, channel: channel, threadTs: threadTs, printError: false)
+        }
+
         guard
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
             let fromId = event["user"]?.string,
             let ts = event["ts"].flatMap({ $0.string.flatMap({ Double($0) }) }),
             ts >= last3Seconds
-            else { return }
+        else { return }
 
-        let threadTs = event["thread_ts"]?.string
         let trimmed = message.trimmedWhitespace()
         if trimmed.hasPrefix("<@") && trimmed.hasCoinSuffix { // leads w/ user
             guard
@@ -69,15 +97,13 @@ try WebSocket.connect(to: webSocketURL) { ws in
                 else { return }
 
             if validChannels.contains(channel) {
-                let total = try mysql.addCoins(for: toId)
-                let response = SlackMessage(to: channel,
-                                            text: "<@\(toId)> has \(total) :coin:",
-                                            threadTs: threadTs)
-                try ws.send(response)
+                try credit(ws, toId, channel: channel, threadTs: threadTs)
             } else {
-                let response = SlackMessage(to: channel,
-                                            text: "Sorry, I only work in public channels. Try thanking <@\(toId)> in <#\(GENERAL)>",
-                                            threadTs: threadTs)
+                let response = SlackMessage(
+                    to: channel,
+                    text: "Sorry, I only work in public channels. Try thanking <@\(user)> in <#\(GENERAL)>",
+                    threadTs: threadTs
+                )
                 try ws.send(response)
             }
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
