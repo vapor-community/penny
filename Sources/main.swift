@@ -44,19 +44,12 @@ guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $
 
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
-func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?, printError: Bool) throws {
+func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?, printError: Bool = true) throws {
     if true {
         let total = try mysql.addCoins(for: user)
         let response = SlackMessage(
             to: channel,
             text: "<@\(user)> has \(total) :coin:",
-            threadTs: threadTs
-        )
-        try ws.send(response)
-    } else if printError {
-        let response = SlackMessage(
-            to: channel,
-            text: "Sorry, I only work in public channels. Try thanking <@\(user)> in <#\(GENERAL)>",
             threadTs: threadTs
         )
         try ws.send(response)
@@ -103,7 +96,16 @@ try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
                 fromId != PENNY
                 else { return }
 
-//            try credit(ws, toId, channel: channel, threadTs: threadTs)
+            if validChannels.contains(channel) {
+                try credit(ws, toId, channel: channel, threadTs: threadTs)
+            } else {
+                let response = SlackMessage(
+                    to: channel,
+                    text: "Sorry, I only work in public channels. Try thanking <@\(user)> in <#\(GENERAL)>",
+                    threadTs: threadTs
+                )
+                try ws.send(response)
+            }
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
                 let response = SlackMessage(to: channel,
