@@ -1,4 +1,5 @@
 import Node
+import Vapor
 
 struct SlackMessage {
     let id: UInt32
@@ -15,7 +16,7 @@ struct SlackMessage {
 }
 
 extension SlackMessage: NodeRepresentable {
-    func makeNode(context: Context) throws -> Node {
+    func makeNode(in context: Context? = nil) throws -> Node {
         var node: [String: NodeConvertible] = [
             "id": id,
             "channel": channel,

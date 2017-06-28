@@ -4,14 +4,13 @@ import Foundation
 import MySQL
 import TLS
 
-setupClient()
-
 let VERSION = "0.3.0"
 let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
 let configDirectory = workingDirectory + "Config/"
-let config = try Settings.Config(
+
+let config = try Config(
     prioritized: [
         .commandLine,
         .directory(root: configDirectory + "secrets"),
@@ -32,21 +31,21 @@ guard
 guard let databaseName = config["mysql", "database"]?.string else { throw BotError.missingMySQLDatabaseName }
 
 let mysql = try MySQL.Database(
-    host: host,
+    hostname: host,
     user: user,
     password: pass,
     database: databaseName
-)
+).makeConnection()
 
 // WebSocket Init
-let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
+let rtmResponse = try loadRealtimeApi(token: token)
 
 guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
-func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?, printError: Bool = true) throws {
-    if validChannels.contains(channel) {
+func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?, printError: Bool) throws {
+    if true {
         let total = try mysql.addCoins(for: user)
         let response = SlackMessage(
             to: channel,
@@ -64,7 +63,7 @@ func credit(_ ws: WebSocket, _ user: String, channel: String, threadTs: String?,
     }
 }
 
-try WebSocket.connect(to: webSocketURL) { ws in
+try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
     print("Connected ...")
 
     ws.onText = { ws, text in
@@ -72,7 +71,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
         let last3Seconds = NSDate().timeIntervalSince1970 - 3
         
         let threadTs = event["thread_ts"]?.string
-        
+
         // reactions
         if
             event["type"]?.string == "reaction_added",
@@ -87,14 +86,14 @@ try WebSocket.connect(to: webSocketURL) { ws in
         {
             try credit(ws, user, channel: channel, threadTs: threadTs, printError: false)
         }
-        
+
         guard
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
             let fromId = event["user"]?.string,
             let ts = event["ts"].flatMap({ $0.string.flatMap({ Double($0) }) }),
             ts >= last3Seconds
-            else { return }
+        else { return }
 
         let trimmed = message.trimmedWhitespace()
         if trimmed.hasPrefix("<@") && trimmed.hasCoinSuffix { // leads w/ user
@@ -104,7 +103,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
                 fromId != PENNY
                 else { return }
 
-            try credit(ws, toId, channel: channel, threadTs: threadTs)
+//            try credit(ws, toId, channel: channel, threadTs: threadTs)
         } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
                 let response = SlackMessage(to: channel,
