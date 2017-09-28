@@ -11,7 +11,11 @@ let validSuffixes = [
     "🙌",
     ":raised_hands:",
     "🚀",
-    ":rocket:"
+    ":rocket:",
+    ":beer:",
+    "🍺",
+    ":beers:",
+    "🍻"
 ]
 extension String {
     var hasCoinSuffix: Bool {
