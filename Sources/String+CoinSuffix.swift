@@ -13,7 +13,9 @@ let validSuffixes = [
     "🚀",
     ":rocket:",
     ":beer:",
-    ":beers:"
+    "🍺",
+    ":beers:",
+    "🍻"
 ]
 extension String {
     var hasCoinSuffix: Bool {
