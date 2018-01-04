@@ -21,7 +21,7 @@ let config = try Config(
 guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
 guard let botId = config["bot-config", "id"]?.string else { throw BotError.missingConfig }
 
-guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
+/*guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
 
 guard
     let host = config["mysql", "host"]?.string,
@@ -35,7 +35,30 @@ let mysql = try MySQL.Database(
     user: user,
     password: pass,
     database: databaseName
-).makeConnection()
+).makeConnection()*/
+
+guard let url = config["mysql", "url"]?.string else { throw BotError.missingMySQLDatabaseUrl }
+
+let uri = try URI(url)
+
+guard
+    let user = uri.userInfo?.username,
+    let pass = uri.userInfo?.info
+    else { throw BotError.missingMySQLDatabaseUrl }
+
+let db = uri.path
+    .characters
+    .split(separator: "/")
+    .map { String($0) }
+    .joined(separator: "")
+
+let mysql = try MySQL.Database(
+    hostname: uri.hostname,
+    user: user,
+    password: pass,
+    database: db,
+    port: uri.port.flatMap { UInt($0) } ?? 3306
+    ).makeConnection()
 
 // WebSocket Init
 let rtmResponse = try loadRealtimeApi(token: token)
