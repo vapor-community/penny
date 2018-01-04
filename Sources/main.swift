@@ -5,7 +5,7 @@ import MySQL
 import TLS
 
 let VERSION = "0.3.0"
-let GENERAL = "C0N67MJ83"
+let GENERAL = "C0N6BDJHL"
 
 let configDirectory = workingDirectory + "Config/"
 
@@ -20,8 +20,6 @@ let config = try Config(
 // Config variables
 guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
 guard let botId = config["bot-config", "id"]?.string else { throw BotError.missingConfig }
-
-print(token)
 
 /*guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
 
@@ -126,7 +124,7 @@ try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
             } else {
                 let response = SlackMessage(
                     to: channel,
-                    text: "Sorry, I only work in public channels. Try thanking <@\(user)> in <#\(GENERAL)>",
+                    text: "Sorry, I only work in public channels. Try thanking <@\(toId)> in <#\(GENERAL)>",
                     threadTs: threadTs
                 )
                 try ws.send(response)
