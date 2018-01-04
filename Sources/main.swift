@@ -5,7 +5,6 @@ import MySQL
 import TLS
 
 let VERSION = "0.3.0"
-let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
 let configDirectory = workingDirectory + "Config/"
@@ -20,6 +19,7 @@ let config = try Config(
 
 // Config variables
 guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
+guard let botId = config["bot-config", "id"]?.string else { throw BotError.missingConfig }
 
 guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
 
@@ -93,7 +93,7 @@ try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
             guard
                 let toId = trimmed.components(separatedBy: "<@").last?.components(separatedBy: ">").first,
                 toId != fromId,
-                fromId != PENNY
+                fromId != botId
                 else { return }
 
             if validChannels.contains(channel) {
@@ -106,7 +106,7 @@ try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
                 )
                 try ws.send(response)
             }
-        } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
+        } else if trimmed.hasPrefix("<@\(botId)>") || trimmed.hasSuffix("<@\(botId)>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
                 let response = SlackMessage(to: channel,
                                             text: "Hey <@\(fromId)> 👋",
@@ -139,7 +139,7 @@ try EngineClient.factory.socket.connect(to: webSocketURL) { ws in
                     .filter({
                         $0.hasPrefix("<@")
                         && $0.hasSuffix(">")
-                        && $0 != "<@U1PF52H9C>"
+                        && $0 != "<@\(botId)>"
                     })
                     .map({ $0.characters.dropFirst(2).dropLast() })
                     .first
