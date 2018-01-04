@@ -1,4 +1,4 @@
 {
-  "token": "$BOT_TOKEN",
-  "id": "$BOT_ID"
+    "token": "$BOT_TOKEN",
+    "id": "$BOT_ID"
 }

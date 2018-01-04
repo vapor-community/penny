@@ -21,6 +21,8 @@ let config = try Config(
 guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
 guard let botId = config["bot-config", "id"]?.string else { throw BotError.missingConfig }
 
+print(token)
+
 /*guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
 
 guard
