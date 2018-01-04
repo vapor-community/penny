@@ -3,3 +3,6 @@
 /Packages
 /*.xcodeproj
 /Config/secrets/
+Package.pins
+.DS_Store
+Package.resolved
