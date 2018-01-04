@@ -20,23 +20,6 @@ let config = try Config(
 // Config variables
 guard let token = config["bot-config", "token"]?.string else { throw BotError.missingConfig }
 guard let botId = config["bot-config", "id"]?.string else { throw BotError.missingConfig }
-
-/*guard let user = config["mysql", "user"]?.string, let pass = config["mysql", "pass"]?.string else { throw BotError.missingMySQLCredentials }
-
-guard
-    let host = config["mysql", "host"]?.string,
-    let port = config["mysql", "port"]?.string
-    else { throw BotError.missingMySQLDatabaseUrl }
-
-guard let databaseName = config["mysql", "database"]?.string else { throw BotError.missingMySQLDatabaseName }
-
-let mysql = try MySQL.Database(
-    hostname: host,
-    user: user,
-    password: pass,
-    database: databaseName
-).makeConnection()*/
-
 guard let url = config["mysql", "url"]?.string else { throw BotError.missingMySQLDatabaseUrl }
 
 let uri = try URI(url)
