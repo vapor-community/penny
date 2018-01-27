@@ -6,7 +6,7 @@ import TLS
 
 setupClient()
 
-let VERSION = "0.2.0"
+let VERSION = "0.2.1"
 let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
