@@ -55,7 +55,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
             let fromId = event["user"]?.string,
-            let ts = event["ts"].flatMap({ $0.string.flatMap({ Double($0) }) }),
+            let ts = event["ts"].flatMap({ $0.string.flatMap { Double($0) } }),
             ts >= last3Seconds
             else { return }
 
@@ -110,14 +110,14 @@ try WebSocket.connect(to: webSocketURL) { ws in
             } else if trimmed.lowercased().contains("how many coins") {
                 let user = trimmed.components(separatedBy: " ")
                     .lazy
-                    .filter({
+                    .filter {
                         $0.hasPrefix("<@")
                         && $0.hasSuffix(">")
                         && $0 != "<@U1PF52H9C>"
-                    })
+                    }
                     .map { $0.dropFirst(2).dropLast() }
                     .first
-                    .flatMap({ String($0) })
+                    .flatMap { String($0) }
                     ?? fromId
 
                 let count = try mysql.coinsCount(for: user)
