@@ -6,7 +6,7 @@
 let workingDirectory = "./"
 #else
 let workingDirectory: String = {
-    let parent = #file.characters.split(separator: "/").map(String.init).dropLast().joined(separator: "/")
+    let parent = #file.split(separator: "/").map(String.init).dropLast().joined(separator: "/")
     let path = "/\(parent)/../"
     return path
 }()

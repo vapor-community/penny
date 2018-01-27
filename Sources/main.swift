@@ -6,7 +6,7 @@ import TLS
 
 setupClient()
 
-let VERSION = "0.2.0"
+let VERSION = "0.2.1"
 let PENNY = "U1PF52H9C"
 let GENERAL = "C0N67MJ83"
 
@@ -41,7 +41,7 @@ let mysql = try MySQL.Database(
 // WebSocket Init
 let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
 
-guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
+guard let validChannels = rtmResponse.data["channels", "id"]?.array?.compactMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
@@ -55,7 +55,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
             let channel = event["channel"]?.string,
             let message = event["text"]?.string,
             let fromId = event["user"]?.string,
-            let ts = event["ts"].flatMap({ $0.string.flatMap({ Double($0) }) }),
+            let ts = event["ts"].flatMap({ $0.string.flatMap { Double($0) } }),
             ts >= last3Seconds
             else { return }
 
@@ -80,7 +80,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
                                             threadTs: threadTs)
                 try ws.send(response)
             }
-        } else if trimmed.hasPrefix("<@U1PF52H9C>") || trimmed.hasSuffix("<@U1PF52H9C>") {
+        } else if trimmed.hasPrefix("<@\(PENNY)>") || trimmed.hasSuffix("<@\(PENNY)>") {
             if trimmed.lowercased().contains(any: "hello", "hey", "hiya", "hi", "aloha", "sup") {
                 let response = SlackMessage(to: channel,
                                             text: "Hey <@\(fromId)> 👋",
@@ -110,14 +110,14 @@ try WebSocket.connect(to: webSocketURL) { ws in
             } else if trimmed.lowercased().contains("how many coins") {
                 let user = trimmed.components(separatedBy: " ")
                     .lazy
-                    .filter({
+                    .filter {
                         $0.hasPrefix("<@")
                         && $0.hasSuffix(">")
-                        && $0 != "<@U1PF52H9C>"
-                    })
-                    .map({ $0.characters.dropFirst(2).dropLast() })
+                        && $0 != "<@\(PENNY)>"
+                    }
+                    .map { $0.dropFirst(2).dropLast() }
                     .first
-                    .flatMap({ String($0) })
+                    .flatMap { String($0) }
                     ?? fromId
 
                 let count = try mysql.coinsCount(for: user)
