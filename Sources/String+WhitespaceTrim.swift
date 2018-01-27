@@ -1,6 +1,6 @@
 extension String {
     func trimmedWhitespace() -> String {
-        var characters = self.characters
+        var characters = self
 
         while characters.first?.isWhitespace == true {
             characters.removeFirst()

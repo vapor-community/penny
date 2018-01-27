@@ -41,7 +41,7 @@ let mysql = try MySQL.Database(
 // WebSocket Init
 let rtmResponse = try BasicClient.loadRealtimeApi(token: token)
 
-guard let validChannels = rtmResponse.data["channels", "id"]?.array?.flatMap({ $0.string }) else { throw BotError.unableToLoadChannels }
+guard let validChannels = rtmResponse.data["channels", "id"]?.array?.compactMap({ $0.string }) else { throw BotError.unableToLoadChannels }
 
 guard let webSocketURL = rtmResponse.data["url"]?.string else { throw BotError.invalidResponse }
 
@@ -115,7 +115,7 @@ try WebSocket.connect(to: webSocketURL) { ws in
                         && $0.hasSuffix(">")
                         && $0 != "<@U1PF52H9C>"
                     })
-                    .map({ $0.characters.dropFirst(2).dropLast() })
+                    .map { $0.dropFirst(2).dropLast() }
                     .first
                     .flatMap({ String($0) })
                     ?? fromId
